@@ -1,0 +1,8 @@
+version: '3'
+services:
+  flow-finder-frontend:
+    build:
+      context: ..
+      dockerfile: docker-flowFinder/Dockerfile.prod
+    ports:
+      - "80:80"

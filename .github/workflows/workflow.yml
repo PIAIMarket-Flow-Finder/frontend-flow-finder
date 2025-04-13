@@ -34,6 +34,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: docker-flowFinder/Dockerfile.prod
           push: true
           tags: |
             ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }}

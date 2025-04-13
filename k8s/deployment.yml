@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow-finder-frontend
+  labels:
+    app: flow-finder-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flow-finder-frontend
+  template:
+    metadata:
+      labels:
+        app: flow-finder-frontend
+    spec:
+      containers:
+        - name: flow-finder-frontend
+          image: ghcr.io/piaimarket-flow-finder/flow-finder-frontend:latest
+          ports:
+            - containerPort: 80

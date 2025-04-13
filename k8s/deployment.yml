@@ -17,5 +17,8 @@ spec:
       containers:
         - name: flow-finder-frontend
           image: ghcr.io/piaimarket-flow-finder/flow-finder-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
+      imagePullSecrets:
+        - name: ghcr-secret

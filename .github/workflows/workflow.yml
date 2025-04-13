@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -38,3 +38,41 @@ jobs:
           tags: |
             ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }}
             ghcr.io/piaimarket-flow-finder/flow-finder-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure Kubernetes credentials
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          # Ou utilisez cette configuration si vous vous connectez via un cluster EKS, GKE, AKS
+          # method: service-account
+          # k8s-url: ${{ secrets.KUBE_API_SERVER }}
+          # k8s-secret: ${{ secrets.KUBE_SECRET }}
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update deployment image
+        run: |
+          # Option 1: Utiliser kubectl pour mettre à jour directement
+          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }} -n flow-finder
+          
+          # Option 2: Alternative avec kustomize (si vous utilisez kustomize)
+          # cd ./k8s && kustomize edit set image ghcr.io/piaimarket-flow-finder/flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }}
+          # kubectl apply -k ./k8s
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/flow-finder-frontend -n your-namespace

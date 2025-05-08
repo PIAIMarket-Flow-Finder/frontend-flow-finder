@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+input, select {
+    @apply border border-gray-200 rounded-md bg-gray-50 px-4 py-2 font-semibold focus:border-sky-200 focus:outline focus:outline-sky-200;
+}
+
+html, body {
+    @apply bg-gray-100;
+}

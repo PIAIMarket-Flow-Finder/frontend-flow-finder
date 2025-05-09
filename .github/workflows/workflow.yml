@@ -79,6 +79,10 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Apply k8s manifests
+        run: |
+          kubectl apply -n $NAMESPACE -f ./k8s/
+
       - name: Update deployment image
         run: |
           NAMESPACE=flow-finder-dev

@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - dev
+
   workflow_dispatch:
     inputs:
       version:
@@ -13,6 +16,7 @@ on:
 
 jobs:
   build-and-push:
+    if:  ${{ vars.RUN_CICD == 'true'  && (github.ref == 'refs/heads/main' ||  github.ref == 'refs/heads/dev')}}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,9 +36,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Determine image tag
+        id: image_tag
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then
+            echo "TAG=dev" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "TAG=${VERSION}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
@@ -43,10 +55,11 @@ jobs:
           file: docker-flowFinder/Dockerfile.prod
           push: true
           tags: |
-            ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }}
+            ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }}
             ghcr.io/piaimarket-flow-finder/flow-finder-frontend:latest
 
-  deploy:
+  deploy-dev:
+    if:  ${{ vars.RUN_CICD == 'true'  && (github.ref == 'refs/heads/dev')}}
     needs: build-and-push
     runs-on: ubuntu-latest
 
@@ -74,10 +87,45 @@ jobs:
       - name: Update deployment image
         run: |
           # Option 1: Utiliser kubectl pour mettre à jour directement
-          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }} -n flow-finder
+          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:dev -n flow-finder-dev
           
           # Option 2: Alternative avec kustomize (si vous utilisez kustomize)
-          # cd ./k8s && kustomize edit set image ghcr.io/piaimarket-flow-finder/flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.VERSION }}
+          # cd ./k8s && kustomize edit set image ghcr.io/piaimarket-flow-finder/flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:dev
+          # kubectl apply -k ./k8s
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/flow-finder-frontend -n flow-finder-dev
+
+  deploy-prod:
+    if: ${{ vars.RUN_CICD == 'true' && steps.get_version.outputs.TAG != '' }}
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure Kubernetes credentials
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update deployment image
+        run: |
+          # Option 1: Utiliser kubectl pour mettre à jour directement
+          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }} -n flow-finder
+
+          # Option 2: Alternative avec kustomize (si vous utilisez kustomize)
+          # cd ./k8s && kustomize edit set image ghcr.io/piaimarket-flow-finder/flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }}
           # kubectl apply -k ./k8s
 
       - name: Verify deployment

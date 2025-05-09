@@ -55,7 +55,7 @@ jobs:
           file: docker-flowFinder/Dockerfile.prod
           push: true
           tags: |
-            ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }}
+            ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.image_tag.outputs.TAG }}
             ghcr.io/piaimarket-flow-finder/flow-finder-frontend:latest
 
   deploy-dev:
@@ -96,6 +96,8 @@ jobs:
       - name: Verify deployment
         run: |
           kubectl rollout status deployment/flow-finder-frontend -n flow-finder-dev
+    outputs:
+      image_tag: ${{ steps.image_tag.outputs.TAG }}
 
   deploy-prod:
     if: ${{ vars.RUN_CICD == 'true' && startsWith(github.ref, 'refs/tags/v') }}
@@ -122,11 +124,7 @@ jobs:
       - name: Update deployment image
         run: |
           # Option 1: Utiliser kubectl pour mettre à jour directement
-          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }} -n flow-finder
-
-          # Option 2: Alternative avec kustomize (si vous utilisez kustomize)
-          # cd ./k8s && kustomize edit set image ghcr.io/piaimarket-flow-finder/flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ steps.get_version.outputs.TAG }}
-          # kubectl apply -k ./k8s
+          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:${{ needs.build-and-push.outputs.image_tag }} -n flow-finder
 
       - name: Verify deployment
         run: |

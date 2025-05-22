@@ -64,6 +64,8 @@ export const startPipeline = createAsyncThunk<
 >(
     'pipeline/start',
     async (request: RequestSend, {dispatch}) => {
+        dispatch(resetPipeline())
+
         dispatch(changePipelineStatus(ProcessStep.Processing));
 
         const jsonBlob = new Blob([JSON.stringify(request)], {type: 'application/json'});

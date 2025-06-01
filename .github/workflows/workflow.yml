@@ -43,7 +43,7 @@ jobs:
         id: image_tag
         run: |
           if [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then
-            echo "TAG=dev" >> $GITHUB_OUTPUT
+            echo "TAG=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "TAG=${VERSION}" >> $GITHUB_OUTPUT
@@ -83,9 +83,10 @@ jobs:
         run: |
           NAMESPACE=flow-finder-dev
           HOSTNAME=flow-finder-dev.kube-ext.isc.heia-fr.ch
+          IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
           
-          # Update deployment image
-          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:dev -n $NAMESPACE
+          # Update deployment image with dynamic tag
+          kubectl set image deployment/flow-finder-frontend flow-finder-frontend=ghcr.io/piaimarket-flow-finder/flow-finder-frontend:$IMAGE_TAG -n $NAMESPACE
 
           # Update ingress host (patch directly)
           kubectl patch ingress flow-finder-ingress -n $NAMESPACE \

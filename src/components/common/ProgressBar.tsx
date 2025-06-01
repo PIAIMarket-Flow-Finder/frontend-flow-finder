@@ -7,9 +7,8 @@ function ProgressBar() {
     return (
         <>
             <div className={"h-2 bg-gray-300 rounded-full mx-16"}>
-                <div className={`h-full bg-black rounded-full ${currentTaskNumber === 0 ? "w-0" : "w-" + currentTaskNumber + "/2"}`}>
+                <div className={`h-full bg-black rounded-full ${currentTaskNumber === 0 ? "w-0" : "w-" + currentTaskNumber + "/5"}`}>
                 </div>
-                {currentTaskNumber}
             </div>
         </>
     );

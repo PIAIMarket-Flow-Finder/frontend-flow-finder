@@ -19,7 +19,9 @@ interface Task {
 const SERVICE_IDS = {
     SCRAPER: "241d5f27-a593-4821-a7ef-4d4b1ca3bd72",
     VECTORIZER: "25d0bc2f-5801-4499-bddd-02affd3a3eeb",
-    SORTING: "sorting-pipeline",
+    SORTER: "e96f13d5-8df8-4212-8fb1-64d8ac1abc4e",
+    CATEGORIZER: "2a97c56b-cfa7-4cdd-86ca-3a513ccf0398",
+    SUMMARIZER: "b8f25902-353a-4dd6-bca7-a4be1251df4f",
     result: "result-pipeline",
 };
 
@@ -51,8 +53,9 @@ const initialState: PipelineState = {
         {tasksId: null, step: 'Submitted', status: ProcessStep.None, elapsedTime: 0},
         {tasksId: null, step: 'Scraping', status: ProcessStep.None, elapsedTime: 0},
         {tasksId: null, step: 'Vectorizing', status: ProcessStep.None, elapsedTime: 0},
-        // { tasksId: null,step: 'Reporting', status: ProcessStep.None, elapsedTime: 0 },
-        // { tasksId: null,step: 'Done', status: ProcessStep.None, elapsedTime: 0 }
+        {tasksId: null, step: 'Sorting', status: ProcessStep.None, elapsedTime: 0 },
+        {tasksId: null, step: 'Categorizing', status: ProcessStep.None, elapsedTime: 0 },
+        {tasksId: null, step: 'Summarizing', status: ProcessStep.None, elapsedTime: 0 }
     ],
     results: null,
 };
@@ -76,14 +79,17 @@ export const startPipeline = createAsyncThunk<
 
         startGlobalTimer(dispatch);
 
-        const response = await ApiClient.post('/flow-finder-2', formData);
+        const response = await ApiClient.post('/flow-finder-dev', formData);
 
         const taskMap = new Map<string, Task>(
             response.data.tasks.map((task: Task) => [task.service_id, task])
         );
 
         const scraperTask = taskMap.get(SERVICE_IDS.SCRAPER);
-        const vectorizingTask = taskMap.get(SERVICE_IDS.VECTORIZER);
+        const vectorizerTask = taskMap.get(SERVICE_IDS.VECTORIZER);
+        const sorterTask = taskMap.get(SERVICE_IDS.SORTER);
+        const categorizerTask = taskMap.get(SERVICE_IDS.CATEGORIZER);
+        const summarizerTask = taskMap.get(SERVICE_IDS.SUMMARIZER);
 
         const state: Partial<PipelineState> = {
             executionId: response.data.id,
@@ -91,9 +97,10 @@ export const startPipeline = createAsyncThunk<
             tasksStatus: [
                 {tasksId: null, step: 'Submitted', status: ProcessStep.Completed, elapsedTime: 0},
                 {tasksId: scraperTask?.id ?? null, step: 'Scraping', status: ProcessStep.Processing, elapsedTime: 0},
-                {tasksId: vectorizingTask?.id ?? null, step: 'Vectorizing', status: ProcessStep.None, elapsedTime: 0},
-                // { tasksId: response.data.tasks[2].id, step: 'Reporting', status: ProcessStep.None, elapsedTime: 0 },
-                // { tasksId: response.data.tasks[3].id, step: 'Done', status: ProcessStep.None, elapsedTime: 0 }
+                {tasksId: vectorizerTask?.id ?? null, step: 'Vectorizing', status: ProcessStep.None, elapsedTime: 0},
+                {tasksId: sorterTask?.id ?? null, step: 'Sorting', status: ProcessStep.None, elapsedTime: 0 },
+                {tasksId: categorizerTask?.id ?? null, step: 'Categorizing', status: ProcessStep.None, elapsedTime: 0 },
+                {tasksId: summarizerTask?.id ?? null, step: 'Summarizing', status: ProcessStep.None, elapsedTime: 0 }
             ],
             currentTaskNumber: 0,
         };
@@ -140,9 +147,9 @@ export const fetchPipelineStatus = createAsyncThunk<
 );
 
 export const updateStepElapseTime = createAsyncThunk<
-    { taskId: string; elapsedTime: number } | undefined, // Return type
-    { taskId: string; elapsedTime: number }, // Parameter type
-    { state: { pipeline: PipelineState } } // ThunkAPI configuration
+    { taskId: string; elapsedTime: number } | undefined,
+    { taskId: string; elapsedTime: number },
+    { state: { pipeline: PipelineState } }
 >(
     'pipeline/updateElapseTime',
     async (payload) => {
@@ -160,7 +167,15 @@ export const fetchFileData = createAsyncThunk<
         try {
             const responseFileName = await ApiClient.get(`/pipeline-executions/${pipeline_execution_id}`);
 
-            const name = responseFileName.data.tasks[responseFileName.data.tasks.length-1].data_out;
+            const tasks = responseFileName.data.tasks;
+
+            let name = "";
+
+            for (const task of tasks) {
+                if (task.service_id != SERVICE_IDS.SUMMARIZER) continue;
+                name = task.data_out;
+                break;
+            }
 
             const response = await ApiClient.get(`/storage/${name}`, {
                 headers: {
@@ -175,7 +190,6 @@ export const fetchFileData = createAsyncThunk<
             };
         } catch (error) {
             console.error('Failed to fetch pipeline status', error);
-            // Use rejectWithValue to properly handle errors in the reducer
             return null;
         }
     }
@@ -204,7 +218,10 @@ export const pipelineSlice = createSlice({
         changePipelineStatus: (state, action: PayloadAction<ProcessStep>) => {
             state.pipelineStatus = action.payload;
         },
-        resetPipeline: () => initialState
+        resetPipeline: () => {
+            stopAllTimers();
+            return initialState;
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -232,7 +249,6 @@ export const pipelineSlice = createSlice({
                 state.results = action.payload;
             })
             .addCase(updateStepElapseTime.fulfilled, (state, action) => {
-                // Check if payload exists
                 if (!action.payload) return;
 
                 const { taskId, elapsedTime } = action.payload;

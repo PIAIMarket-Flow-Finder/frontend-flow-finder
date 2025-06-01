@@ -10,7 +10,7 @@ function Icon({ children, title, tasks_id }: { children: React.ReactNode, title:
     const tasksStatus = useSelector((state: RootState) => state.pipeline.tasksStatus[tasks_id]);
 
     useEffect(() => {
-        if (!tasksStatus.tasksId || tasks_id === 0 || tasks_id === 4) return;
+        if (!tasksStatus.tasksId || tasks_id === 0) return;
 
         // Convert tasks_id to string if needed
         const taskIdString = tasksStatus.tasksId;
@@ -68,15 +68,21 @@ function Icon({ children, title, tasks_id }: { children: React.ReactNode, title:
                         <FaCheck className={"size-6 mx-auto text-white"}/>
                     </div>
                     :
-                    <div className={"bg-gray-300 rounded-full w-12 h-12 content-center"}>
-                        {children}
+                    <div className={`rounded-full w-12 h-12 content-center ${
+                        tasksStatus.status === ProcessStep.Processing
+                            ? "bg-blue-500 animate-pulse"
+                            : "bg-gray-300"
+                    }`}>
+                        <div className={tasksStatus.status === ProcessStep.Processing ? "text-white" : ""}>
+                            {children}
+                        </div>
                     </div>
                 }
             </div>
             <div className={"flex flex-col justify-center font-bold text-xl text-center"}>
                 {title}
             </div>
-            { tasks_id !== 0 && tasks_id !== 4
+            { tasks_id !== 0 && (tasksStatus.status === ProcessStep.Processing || tasksStatus.status === ProcessStep.Completed)
                 ?
                 <div className={"flex flex-col justify-center font-semibold text-sm text-center"}>
                     { formatElapsedTime(tasksStatus.elapsedTime) }

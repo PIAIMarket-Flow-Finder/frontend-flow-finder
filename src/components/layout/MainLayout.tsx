@@ -5,7 +5,7 @@ import Results from "../results/Results.tsx";
 import LoadingSpinner from "../common/LoadingSpinner.tsx";
 import EmptyRequest from "../common/EmptyRequest.tsx";
 import {ProcessStep} from "../../utils/ProcessStep.tsx";
-import logo from '../../assets/logo.png';
+import logo from '../../assets/flow-finder-logo-text.jpg';
 import {useSelector} from "react-redux";
 import {RootState} from "../../hooks/store.tsx";
 
@@ -33,10 +33,7 @@ function MainLayout() {
             <div className={"w-full h-20 bg-white shadow border-t-2 border-t-gray-300 p-4"}>
                 <div className={"flex flex-row justify-between w-9/12 m-auto"}>
                     <div className={"flex flex-row gap-4"}>
-                        <img src={logo} alt={"logo"} className={"w-12 h-12"}/>
-                        <div className={"h-full font-bold content-center text-xl"}>
-                            App analyzer
-                        </div>
+                        <img src={logo} alt={"logo"} className={"h-12"}/>
                     </div>
                 </div>
             </div>
@@ -60,7 +57,7 @@ function MainLayout() {
                         📱 App Analyzer — Interdisciplinary project AIMarket 2025
                     </div>
                     <div>
-                        Developed by: Frossard loïc & Van der Ben Marco
+                        Developed by: Frossard Loïc & Van der Ben Marco
                     </div>
                     <div>
                         Master in Computer Science, HES-SO

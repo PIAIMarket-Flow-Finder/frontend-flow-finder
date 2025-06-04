@@ -17,11 +17,11 @@ interface Task {
 }
 
 const SERVICE_IDS = {
-    SCRAPER: "241d5f27-a593-4821-a7ef-4d4b1ca3bd72",
-    VECTORIZER: "25d0bc2f-5801-4499-bddd-02affd3a3eeb",
-    SORTER: "e96f13d5-8df8-4212-8fb1-64d8ac1abc4e",
-    CATEGORIZER: "2a97c56b-cfa7-4cdd-86ca-3a513ccf0398",
-    SUMMARIZER: "b8f25902-353a-4dd6-bca7-a4be1251df4f",
+    SCRAPER: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    VECTORIZER: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    SORTER: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    CATEGORIZER: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    SUMMARIZER: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     result: "result-pipeline",
 };
 

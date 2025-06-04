@@ -120,7 +120,7 @@ function Results() {
                                                 {category.top_points.reduce((acc, point) => {
                                                     const match = point.match(/\((\d+) mentions\)/);
                                                     return acc + (match ? parseInt(match[1]) : 0);
-                                                }, 0)} mentions totales
+                                                }, 0)} total mentions
                                             </p>
                                         </div>
                                     </div>
@@ -136,9 +136,9 @@ function Results() {
                                     <div className="border-t border-gray-200 bg-white p-4">
                                         <ul className="space-y-3">
                                             {category.top_points.map((point: string, pointIndex: number) => {
-                                                const mentionsMatch = point.match(/\((\d+) mentions\)$/);
-                                                const mentions = mentionsMatch ? mentionsMatch[1] : "0";
-                                                const cleanPoint = point.replace(/\(\d+ mentions\)$/, '').trim();
+                                                const mentionsMatch = point.match(/\((\d+) mentions?\)$/i); // Added optional 's' and case insensitive
+                                                const mentions = mentionsMatch ? parseInt(mentionsMatch[1], 10) : 0; // Parse as number
+                                                const cleanPoint = point.replace(/\(\d+ mentions?\)$/i, '').trim();
 
                                                 return (
                                                     <li key={pointIndex} className="flex items-start gap-3">
@@ -171,8 +171,8 @@ function Results() {
             console.error("Error parsing JSON:", error);
             return (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-                    <p className="font-semibold">Erreur lors de l'affichage des données</p>
-                    <p className="text-sm mt-1">Les données ne sont pas au format attendu.</p>
+                    <p className="font-semibold">Error displaying data</p>
+                    <p className="text-sm mt-1">The data is not in the expected format.</p>
                 </div>
             );
         }
@@ -183,7 +183,7 @@ function Results() {
             {pipelineResults ? (
                 <>
                     <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-2xl font-bold mb-6">Résultats de l'analyse</h2>
+                        <h2 className="text-2xl font-bold mb-6">Result</h2>
                         {renderJsonData(pipelineResults.data)}
                     </div>
                     <div className="flex justify-end py-4 select-none">
